@@ -254,3 +254,48 @@ input[aria-invalid="true"] { border-color: var(--red); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
+
+/* ---------- per-ball stings (driven by the Web Animations API in app.js) ---------- */
+.predictor { position: relative; }
+.sting { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 5; display: grid; place-items: center; }
+.sting--chip { place-items: center; }  /* over the bar, clear of the equation and momentum tag */
+.sting__plate {
+  display: flex; align-items: center; gap: .25em;
+  font: 900 clamp(3.6rem, 13vw, 8.5rem)/.9 var(--display); text-transform: uppercase; letter-spacing: .02em;
+  padding: .08em .55em .1em;
+  clip-path: polygon(5% 0, 100% 0, 95% 100%, 0 100%);
+}
+.sting--six .sting__plate { background: var(--gold); color: var(--gold-ink); }
+.sting--four .sting__plate { background: var(--turf); color: #07160b; }
+.sting--wkt .sting__plate { background: var(--red); color: var(--red-ink); }
+.sting__plate svg { height: .78em; width: auto; overflow: visible; fill: currentColor; }
+.sting__chip {
+  font: 900 clamp(1.4rem, 4vw, 2rem)/1 var(--display); text-transform: uppercase; letter-spacing: .03em;
+  background: var(--chalk); color: var(--ground); padding: .3em .9em .3em .7em;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+}
+.sting__chip--wd { background: var(--plate-2); color: var(--chalk); border-top: 1px solid var(--seam); }
+.sting__rope { position: absolute; left: 0; right: 0; top: 72%; height: 5px; background: var(--turf); transform-origin: left; }
+.sting__shard { position: absolute; left: 50%; top: 50%; width: 7px; height: 26px; margin: -13px 0 0 -3px; background: var(--gold); }
+
+.swing {
+  display: inline-block; margin: .9rem 0 0 .6rem; padding: .5rem 1.2rem .5rem .8rem; vertical-align: top;
+  font: 800 clamp(.85rem, 2.2vw, 1rem)/1.25 var(--ui); font-variation-settings: "wdth" 85; text-transform: uppercase; letter-spacing: .04em;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+}
+.swing--up { background: var(--gold); color: var(--gold-ink); }
+.swing--down { background: var(--red); color: var(--red-ink); }
+
+.sound {
+  display: inline-flex; align-items: center; gap: .4rem; cursor: pointer;
+  font: 700 .78rem/1 var(--ui); text-transform: uppercase; letter-spacing: .08em;
+  color: var(--chalk-dim); background: transparent; border: 1px solid var(--seam); border-radius: 2px; padding: .45rem .7rem;
+}
+.sound svg { width: 18px; height: 18px; }
+.sound .sound__waves { display: none; }
+.sound[aria-pressed="true"] { color: var(--gold); border-color: var(--gold); }
+.sound[aria-pressed="true"] .sound__waves { display: inline; }
+.sound[aria-pressed="true"] .sound__mute { display: none; }
+.sound:hover { border-color: var(--chalk-dim); }
+.masthead__plate { flex-wrap: nowrap; }
+@media (max-width: 559px) { .sound span { display: none; } .sound { padding: .5rem; } }

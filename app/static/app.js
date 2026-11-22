@@ -144,9 +144,13 @@ function countTo(target) {
   requestAnimationFrame(step);
 }
 
+let hasShown = false;
 function render(s, res) {
   const pct = res.win_probability * 100;
+  const before = shownPct;
   setBar(pct, s.batting_team, s.bowling_team);
+  if (hasShown && Math.abs(pct - before) >= 10) swing(pct - before, s.batting_team);
+  hasShown = true;
   const balls = 120 - (s.overs * 6 + s.balls);
   const need = s.target - s.runs;
   const rrr = (need * 6 / balls).toFixed(2);
@@ -227,6 +231,8 @@ function logBall(mark) {
   writeState(s);
   drawStrip(true);
   $("undo").disabled = false;
+  sting(mark);
+  play(mark);
   if (!finished(s)) predict();
 }
 
@@ -268,6 +274,110 @@ function drawStrip(animateLast) {
   $("strip").replaceChildren(...cells);
 }
 
+// ---------- per-ball stings, momentum tag and optional sound ----------
+const EASE = "cubic-bezier(.16, 1, .3, 1)";
+const STUMPS = `<svg viewBox="0 0 30 40"><rect x="3" y="8" width="4" height="32"/><rect x="13" y="8" width="4" height="32"/>
+  <rect x="23" y="8" width="4" height="32"/><rect class="bail" x="2" y="3" width="12" height="3"/><rect class="bail" x="16" y="3" width="12" height="3"/></svg>`;
+
+function sting(mark) {
+  const layer = $("sting");
+  layer.getAnimations({ subtree: true }).forEach((a) => a.cancel());   // a new ball replaces the old sting
+  const big = { 6: ["six", "Six"], 4: ["four", "Four"], W: ["wkt", "Wicket"] }[mark];
+  layer.className = `sting sting--${big ? big[0] : "chip"}`;
+  const el = document.createElement("div");
+  if (big) {
+    el.className = "sting__plate";
+    el.innerHTML = mark === "W" ? `${STUMPS}<span>Wicket</span>` : `<span>${big[1]}</span>`;
+  } else {
+    el.className = `sting__chip${mark === "Wd" ? " sting__chip--wd" : ""}`;
+    el.textContent = { 0: "Dot ball", 1: "+1 run", 2: "+2 runs", 3: "+3 runs", Wd: "Wide +1" }[mark];
+  }
+  layer.replaceChildren(el);
+  if (reduceMotion) return el.animate([{ opacity: 0 }, { opacity: 1, offset: .15 }, { opacity: 1, offset: .8 }, { opacity: 0 }], 900);
+  if (!big) {
+    return el.animate([{ opacity: 0, transform: "translateY(14px) scale(.85)" }, { opacity: 1, transform: "none", offset: .2, easing: EASE },
+      { opacity: 1, offset: .7 }, { opacity: 0, transform: "translateY(-12px)" }], { duration: 950, fill: "forwards" });
+  }
+  // banner: sweeps in on the broadcast slant, holds, sweeps out
+  el.animate([{ transform: "translateX(-130%) skewX(-10deg)", easing: EASE }, { transform: "translateX(0) skewX(-10deg)", offset: .28 },
+    { transform: "translateX(0) skewX(-10deg)", offset: .72, easing: "cubic-bezier(.7, 0, .84, 0)" },
+    { transform: "translateX(130%) skewX(-10deg)" }], { duration: 1350, fill: "forwards" });
+  if (mark === "6") burst(layer);
+  if (mark === "4") rope(layer);
+  if (mark === "W") el.querySelectorAll(".bail").forEach((b, i) =>
+    b.animate([{ transform: "none" }, { transform: `translate(${i ? 16 : -16}px, -30px) rotate(${i ? 75 : -75}deg)`, opacity: 0 }],
+      { duration: 700, delay: 300, easing: "cubic-bezier(.2, .7, .4, 1)", fill: "forwards" }));
+}
+
+function burst(layer) {   // gold shards fly out from the centre, like a six into the stands
+  for (let i = 0; i < 14; i++) {
+    const a = (i / 14) * 2 * Math.PI, r = 160 + (i % 3) * 60, shard = document.createElement("span");
+    shard.className = "sting__shard";
+    layer.append(shard);
+    shard.animate([{ transform: `rotate(${a + Math.PI / 2}rad) scale(.3)`, opacity: 1 },
+      { transform: `translate(${Math.cos(a) * r}px, ${Math.sin(a) * r}px) rotate(${a + Math.PI / 2}rad) scale(1)`, opacity: 0 }],
+      { duration: 950, delay: 250, easing: EASE, fill: "forwards" });
+  }
+}
+
+function rope(layer) {   // the boundary rope races across under the banner
+  const line = document.createElement("span");
+  line.className = "sting__rope";
+  layer.append(line);
+  line.animate([{ transform: "scaleX(0)", opacity: 1 }, { transform: "scaleX(1)", opacity: 1, offset: .6 }, { transform: "scaleX(1)", opacity: 0 }],
+    { duration: 1100, easing: EASE, fill: "forwards" });
+}
+
+function swing(delta, team) {   // one ball moved the chance by 10+ points
+  const tag = $("swing");
+  tag.textContent = `Momentum shift ${delta > 0 ? "+" : "−"}${Math.abs(Math.round(delta))}% ${team}`;
+  tag.className = `swing swing--${delta > 0 ? "up" : "down"}`;
+  tag.hidden = false;
+  tag.getAnimations().forEach((a) => a.cancel());
+  const anim = tag.animate(reduceMotion ? [{ opacity: 1 }, { opacity: 1 }] :
+    [{ opacity: 0, transform: "translateX(-16px)" }, { opacity: 1, transform: "none", offset: .12, easing: EASE }, { opacity: 1, offset: .85 }, { opacity: 0 }],
+    { duration: 2600 });
+  anim.onfinish = () => { tag.hidden = true; };
+}
+
+// Sound is synthesized with Web Audio (no audio files); off until the visitor turns it on.
+let audio = null;
+let soundOn = false;
+function noise(seconds, filterType, freq, peak, attack) {
+  const buf = audio.createBuffer(1, audio.sampleRate * seconds, audio.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  const src = audio.createBufferSource(), filter = audio.createBiquadFilter(), gain = audio.createGain(), t = audio.currentTime;
+  src.buffer = buf; filter.type = filterType; filter.frequency.value = freq;
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.exponentialRampToValueAtTime(peak, t + attack);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + seconds);
+  src.connect(filter).connect(gain).connect(audio.destination);
+  src.start();
+}
+function tone(freqFrom, freqTo, seconds, peak) {
+  const osc = audio.createOscillator(), gain = audio.createGain(), t = audio.currentTime;
+  osc.frequency.setValueAtTime(freqFrom, t); osc.frequency.exponentialRampToValueAtTime(freqTo, t + seconds);
+  gain.gain.setValueAtTime(peak, t); gain.gain.exponentialRampToValueAtTime(0.0001, t + seconds);
+  osc.connect(gain).connect(audio.destination);
+  osc.start(); osc.stop(t + seconds);
+}
+function play(mark) {
+  if (!soundOn || !audio) return;
+  const crack = () => noise(0.07, "bandpass", 2600, 0.6, 0.003);          // bat on ball
+  const roar = (peak, secs) => noise(secs, "lowpass", 900, peak, 0.35);    // crowd
+  if (mark === "6") { crack(); roar(0.5, 1.8); }
+  else if (mark === "4") { crack(); roar(0.3, 1.2); }
+  else if (mark === "W") { tone(140, 55, 0.25, 0.5); noise(0.12, "bandpass", 1400, 0.4, 0.003); roar(0.3, 1.3); }
+  else if (["1", "2", "3"].includes(mark)) crack();
+  else tone(900, 700, 0.06, 0.08);                                         // dot or wide: a soft tick
+}
+function toggleSound() {
+  soundOn = !soundOn;
+  if (soundOn && !audio) audio = new AudioContext();   // created on a click, as browsers require
+  $("sound").setAttribute("aria-pressed", String(soundOn));
+}
+
 // ---------- wiring ----------
 function fill(select, options, chosen) {
   select.replaceChildren(...options.map((o) => new Option(o, o, false, o === chosen)));
@@ -298,4 +408,5 @@ form.addEventListener("input", () => {   // a typed edit replaces the logged his
 });
 document.querySelectorAll(".key[data-ball]").forEach((k) => k.addEventListener("click", () => logBall(k.dataset.ball)));
 $("undo").addEventListener("click", undo);
+$("sound").addEventListener("click", toggleSound);
 boot();

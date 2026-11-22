@@ -26,6 +26,10 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     <span class="masthead__mark">PSL</span>
     <span class="masthead__title">Chase Predictor</span>
   </div>
+  <button type="button" class="sound" id="sound" aria-pressed="false" aria-label="Sound effects">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path class="sound__waves" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path class="sound__mute" d="M16 9l6 6M22 9l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Sound</span>
+  </button>
 </header>
 
 <main class="stage">
@@ -45,6 +49,8 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
       </div>
     </div>
     <p class="equation" id="equation">Enter the chase below.</p>
+    <p class="swing" id="swing" hidden></p>
+    <div class="sting" id="sting" aria-hidden="true"></div>
     <p class="sr-only" id="summary"></p>
     <p class="notice" id="notice" role="alert" hidden></p>
   </section>
