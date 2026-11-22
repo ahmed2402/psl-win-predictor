@@ -25,7 +25,7 @@ macOS / Linux:
     python src/download_data.py     # Cricsheet PSL JSON -> data/raw/psl_json
     python src/weather.py           # Open-Meteo weather per match city/date -> data/external/weather.csv
     python src/build_dataset.py     # JSON + weather -> data/processed/ball_states.csv
-    python src/eda.py               # 7 figures in reports/figures
+    jupyter nbconvert --to notebook --execute --inplace notebooks/01_eda.ipynb   # EDA, 7 figures -> reports/figures
     python src/train.py             # tunes models, saves models/win_pipeline.joblib
     python src/evaluate.py          # test-set plots and error tables
     streamlit run app/streamlit_app.py
