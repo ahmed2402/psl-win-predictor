@@ -3,19 +3,22 @@
 CT-378 Machine Learning project. Predicts the probability that the chasing team wins,
 from the match state at any ball of a PSL second innings. Deployed with Streamlit.
 
-## Setup (Python 3.12 or newer; run every command from the project root folder)
+## Setup (Python 3.13, see .python-version; run every command from the project root folder)
+
+`requirements.txt` holds the runtime packages only (what the deployed API needs).
+`requirements-dev.txt` adds the data pipeline, notebook and test tools.
 
 Windows (PowerShell):
 
-    py -3.12 -m venv .venv          # or: python -m venv .venv
+    py -3.13 -m venv .venv
     .venv\Scripts\Activate.ps1
-    pip install -r requirements.txt
+    pip install -r requirements-dev.txt
 
 macOS / Linux:
 
-    python3 -m venv .venv
+    python3.13 -m venv .venv
     source .venv/bin/activate
-    pip install -r requirements.txt
+    pip install -r requirements-dev.txt
 
 ## Run order
 
