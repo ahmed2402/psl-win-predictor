@@ -32,6 +32,15 @@ macOS / Linux:
 
 Training takes a few minutes on a laptop.
 
+## Run the web app locally
+
+    uvicorn app.main:app --reload     # http://localhost:8000  (API docs at /docs)
+    pytest                            # API tests (offline)
+
+Endpoints: `GET /health`, `GET /meta`, `POST /predict`. `/predict` validates the match state and fetches
+today's evening dew point for the chosen city live from Open-Meteo (falls back to the training median
+if the weather service is unreachable).
+
 Dry run: `python tools/make_fake_data.py` writes SYNTHETIC matches into
 data/raw/psl_json (`weather.py` still needs internet). Delete that folder before real work and never report numbers from it.
 

@@ -8,16 +8,11 @@ import pandas as pd
 import requests
 
 from build_dataset import RAW_DIR, venue_city
+from features import COORDS
 
 OUT = pathlib.Path("data/external/weather.csv")
 API = "https://archive-api.open-meteo.com/v1/archive"
 
-# Every city in the Cricsheet data (checked 2026-11-22). A new city must be added here.
-COORDS = {
-    "Lahore": (31.52, 74.36), "Karachi": (24.86, 67.01), "Rawalpindi": (33.60, 73.04),
-    "Multan": (30.16, 71.52), "Dubai": (25.20, 55.27), "Sharjah": (25.35, 55.42),
-    "Abu Dhabi": (24.45, 54.38),
-}
 
 
 def fetch_city(city, lat, lon, start, end):

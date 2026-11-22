@@ -3,6 +3,12 @@ import numpy as np
 import pandas as pd
 
 PK_CITIES = {"Lahore", "Karachi", "Rawalpindi", "Multan", "Islamabad", "Faisalabad"}
+# Every city in the Cricsheet data (checked 2026-11-22). Used by weather.py (history) and the API (live dew).
+COORDS = {
+    "Lahore": (31.52, 74.36), "Karachi": (24.86, 67.01), "Rawalpindi": (33.60, 73.04),
+    "Multan": (30.16, 71.52), "Dubai": (25.20, 55.27), "Sharjah": (25.35, 55.42),
+    "Abu Dhabi": (24.45, 54.38),
+}
 
 # Model inputs chosen from the EDA decision table (notebooks/01_eda.ipynb).
 # The dataset keeps all 25 candidate features; dropped ones were redundant, drifting or memorisable.
