@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from features import WEATHER
 from psl_pipeline import split_by_season
 
 FIG = pathlib.Path("reports/figures")
@@ -52,7 +53,7 @@ fig.savefig(FIG / "eda_4_venue_boxplot.png", bbox_inches="tight")
 # %% 5. Correlation heatmap of numeric features
 num = ["over", "runs", "wickets", "balls_left", "runs_needed", "target", "crr", "rrr", "rr_gap",
        "runs_last12", "wkts_last12", "toss_winner_is_chaser", "in_pakistan", "chaser_won"]
-num += [c for c in ("temp_c", "humidity") if c in df.columns]
+num += WEATHER
 corr = df[num].corr()
 fig, ax = plt.subplots(figsize=(7, 6))
 im = ax.imshow(corr, cmap="Greys", vmin=-1, vmax=1)

@@ -29,7 +29,7 @@ class VenueAverage(BaseEstimator, TransformerMixin):
 
 
 def feature_lists(df):
-    numeric = NUMERIC + [c for c in WEATHER if c in df.columns]
+    numeric = NUMERIC + WEATHER
     return numeric, CATEGORICAL
 
 

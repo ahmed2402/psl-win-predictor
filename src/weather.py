@@ -1,15 +1,18 @@
-"""Optional second source: evening temperature and humidity per match city and date (Open-Meteo, CC BY 4.0)."""
+"""Second data source: evening temperature, humidity and dew point per match city and date (Open-Meteo, CC BY 4.0)."""
+import json
 import pathlib
+import sys
 import time
 
 import pandas as pd
 import requests
 
-STATES = pathlib.Path("data/processed/ball_states.csv")
+from build_dataset import RAW_DIR, venue_city
+
 OUT = pathlib.Path("data/external/weather.csv")
 API = "https://archive-api.open-meteo.com/v1/archive"
 
-# Add any city that shows up in your data. Check with: df["city"].unique()
+# Every city in the Cricsheet data (checked 2026-11-22). A new city must be added here.
 COORDS = {
     "Lahore": (31.52, 74.36), "Karachi": (24.86, 67.01), "Rawalpindi": (33.60, 73.04),
     "Multan": (30.16, 71.52), "Dubai": (25.20, 55.27), "Sharjah": (25.35, 55.42),
@@ -19,7 +22,7 @@ COORDS = {
 
 def fetch_city(city, lat, lon, start, end):
     params = dict(latitude=lat, longitude=lon, start_date=start, end_date=end,
-                  hourly="temperature_2m,relative_humidity_2m", timezone="auto")
+                  hourly="temperature_2m,relative_humidity_2m,dew_point_2m", timezone="auto")
     for attempt in range(5):                               # retry politely on rate limits / server errors
         r = requests.get(API, params=params, timeout=60)
         status = getattr(r, "status_code", 200)
@@ -32,19 +35,22 @@ def fetch_city(city, lat, lon, start, end):
     h["time"] = pd.to_datetime(h["time"])
     h = h[h["time"].dt.hour.between(16, 22)]               # evening, when matches are played
     d = h.groupby(h["time"].dt.normalize()).agg(
-        temp_c=("temperature_2m", "mean"), humidity=("relative_humidity_2m", "mean")).reset_index()
-    d.columns = ["date", "temp_c", "humidity"]
+        temp_c=("temperature_2m", "mean"), humidity=("relative_humidity_2m", "mean"),
+        dew_point_c=("dew_point_2m", "mean")).reset_index()
+    d.columns = ["date", "temp_c", "humidity", "dew_point_c"]
     d.insert(0, "city", city)
     return d
 
 
 def main():
-    df = pd.read_csv(STATES, parse_dates=["date"], usecols=["city", "date"]).drop_duplicates()
+    infos = [json.loads(f.read_text())["info"] for f in RAW_DIR.glob("*.json")]
+    df = pd.DataFrame({"city": [venue_city(i)[1] for i in infos],
+                       "date": pd.to_datetime([i["dates"][0] for i in infos])}).drop_duplicates()
+    missing = set(df["city"]) - set(COORDS)
+    if missing:
+        sys.exit(f"No coordinates for {missing}: add them to COORDS")
     parts = []
     for city, g in df.groupby("city"):
-        if city not in COORDS:
-            print("No coordinates for", city, "- add it to COORDS")
-            continue
         for year, gy in g.groupby(g["date"].dt.year):      # one small request per city per year
             parts.append(fetch_city(city, *COORDS[city], gy["date"].min().date(), gy["date"].max().date()))
             time.sleep(0.3)

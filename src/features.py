@@ -13,7 +13,7 @@ NUMERIC = [
     "is_powerplay", "is_death", "toss_winner_is_chaser", "in_pakistan",
     "venue_avg_first",  # added inside the Pipeline by VenueAverage
 ]
-WEATHER = ["temp_c", "humidity"]  # optional second source
+WEATHER = ["temp_c", "humidity", "dew_point_c"]  # second source (Open-Meteo)
 CATEGORICAL = ["batting_team", "bowling_team", "venue", "toss_decision"]
 
 

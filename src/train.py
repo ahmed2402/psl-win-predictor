@@ -13,6 +13,7 @@ from sklearn.metrics import f1_score, log_loss, roc_auc_score
 from sklearn.model_selection import GridSearchCV, GroupKFold, RandomizedSearchCV
 from sklearn.neighbors import KNeighborsClassifier
 
+from features import WEATHER
 from psl_pipeline import feature_lists, make_baseline, make_pipeline, split_by_season
 
 DATA = pathlib.Path("data/processed/ball_states.csv")
@@ -101,7 +102,7 @@ def main():
     meta = {
         "model": best_name, "feature_columns": [c for c in cols if c != "match_id"],
         "teams": sorted(df["batting_team"].unique()), "venues": sorted(df["venue"].unique()),
-        "venue_city": venue_city, "weather_features": [c for c in ("temp_c", "humidity") if c in df.columns],
+        "venue_city": venue_city, "weather_features": WEATHER,
         "test_metrics": test, "split": {k: v for k, v in groups.items()},
     }
     pathlib.Path("models/meta.json").write_text(json.dumps(meta, indent=2))
