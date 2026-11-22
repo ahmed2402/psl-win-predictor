@@ -47,9 +47,15 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
       <div class="tug__bar" aria-hidden="true">
         <div class="tug__fill" id="tug-fill"></div>
       </div>
+      <p class="swing" id="swing" hidden></p>
     </div>
-    <p class="equation" id="equation">Enter the chase below.</p>
-    <p class="swing" id="swing" hidden></p>
+    <div class="equation" id="equation">
+      <div class="stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 9.5 5 19a1.4 1.4 0 0 1-2-2l9.5-9.5"/><path d="m12.5 7.5 3-3 4 4-3 3z"/><path d="m17.5 4.5 2-2"/></svg><span class="stat__num" id="st-need">--</span><span class="stat__lbl">Runs needed</span></div>
+      <div class="stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M7.5 4.2c2.6 2.2 2.6 13.4 0 15.6M16.5 4.2c-2.6 2.2-2.6 13.4 0 15.6"/></svg><span class="stat__num" id="st-balls">--</span><span class="stat__lbl">Balls left</span></div>
+      <div class="stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 21V7M12 21V7M18 21V7"/><path d="M5 4h6M13 4h6"/></svg><span class="stat__num" id="st-wkts">--</span><span class="stat__lbl">Wickets left</span></div>
+      <div class="stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 17a9 9 0 1 1 17 0"/><path d="m12 13 4-5"/><circle cx="12" cy="13" r="1.4" fill="currentColor"/></svg><span class="stat__num" id="st-rrr">--</span><span class="stat__lbl">Req. rate</span></div>
+    </div>
+    <p class="result" id="result" hidden></p>
     <div class="sting" id="sting" aria-hidden="true"></div>
     <p class="sr-only" id="summary"></p>
     <p class="notice" id="notice" role="alert" hidden></p>
@@ -142,9 +148,13 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     <p>Teams, venue and toss are not inputs: their effect already shows in the live state.</p>
     <p class="how__metrics" id="metrics"></p>
     <p class="how__caveat">Recent high-scoring seasons can make it underrate chasers mid-innings.</p>
+    <p class="how__caveat">Unofficial fan project, not affiliated with the PSL or its teams. Team badges are original designs.</p>
   </details>
 </main>
 
-<footer class="foot">CT-378 Machine Learning project · Ahmed Raza &amp; Fuzail Ahmed Siddiqui · Data: Cricsheet (ODC-By), Open-Meteo (CC BY 4.0) · Unofficial, not affiliated with the PSL or its teams; team badges are original designs.</footer>
+<footer class="foot">
+  <span>CT-378 · Ahmed Raza &amp; Fuzail Ahmed Siddiqui</span>
+  <span>Data: <a href="https://cricsheet.org/licensing/">Cricsheet</a>, <a href="https://open-meteo.com/en/licence">Open-Meteo</a> · Unofficial</span>
+</footer>
 </body>
 </html>

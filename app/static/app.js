@@ -126,7 +126,7 @@ function setBar(pct, chaseName, bowlName) {
   $("bowl-name").textContent = bowlName;
   $("chase-badge").innerHTML = badgeSVG(chaseName);
   $("bowl-badge").innerHTML = badgeSVG(bowlName);
-  $("tug-fill").style.setProperty("--p", `${pct}%`);
+  $("tug-fill").style.setProperty("--p", pct >= 100 ? "calc(100% + 22px)" : `${pct}%`);   // at 100% push the slant past the edge
   countTo(pct);
 }
 
@@ -154,10 +154,11 @@ function render(s, res) {
   const balls = 120 - (s.overs * 6 + s.balls);
   const need = s.target - s.runs;
   const rrr = (need * 6 / balls).toFixed(2);
-  $("equation").innerHTML = "";
-  const clause = (...parts) => { const el = document.createElement("span"); el.append(...parts); return el; };
-  $("equation").append(clause(`${s.batting_team} need `, bold(need), " off ", bold(balls)), " · ",
-    clause(`${10 - s.wickets} wickets left`), " · ", clause(`RRR ${rrr}`));
+  showResult(null);
+  $("st-need").textContent = need;
+  $("st-balls").textContent = balls;
+  $("st-wkts").textContent = 10 - s.wickets;
+  $("st-rrr").textContent = rrr;
   $("summary").textContent = `${s.batting_team} ${Math.round(pct)} percent, ${s.bowling_team} ${100 - Math.round(pct)} percent.`;
   drawWorm(res.what_if, s.runs);
   drawNeedle(res.contributions);
@@ -244,9 +245,15 @@ function finished(s) {   // the chase can end on this ball: no prediction needed
   else if (legalBalls >= 120) [text, pct] = s.runs === s.target - 1 ? ["Scores level: it's a tie.", 50] : [`Overs are up. ${s.bowling_team} win.`, 0];
   if (text === null) return false;
   setBar(pct, s.batting_team, s.bowling_team);
-  $("equation").textContent = text;
+  showResult(text);
   document.querySelectorAll(".key[data-ball]").forEach((k) => { k.disabled = true; });
   return true;
+}
+
+function showResult(text) {   // the chase is over: a result plate replaces the stat strip
+  $("result").textContent = text || "";
+  $("result").hidden = !text;
+  $("equation").hidden = !!text;
 }
 
 function undo() {
@@ -293,15 +300,21 @@ function sting(mark) {
     el.textContent = { 0: "Dot ball", 1: "+1 run", 2: "+2 runs", 3: "+3 runs", Wd: "Wide +1" }[mark];
   }
   layer.replaceChildren(el);
-  if (reduceMotion) return el.animate([{ opacity: 0 }, { opacity: 1, offset: .15 }, { opacity: 1, offset: .8 }, { opacity: 0 }], 900);
-  if (!big) {
-    return el.animate([{ opacity: 0, transform: "translateY(14px) scale(.85)" }, { opacity: 1, transform: "none", offset: .2, easing: EASE },
+  let anim;
+  if (reduceMotion) {
+    anim = el.animate([{ opacity: 0 }, { opacity: 1, offset: .15 }, { opacity: 1, offset: .8 }, { opacity: 0 }], 900);
+  } else if (!big) {
+    anim = el.animate([{ opacity: 0, transform: "translateY(14px) scale(.85)" }, { opacity: 1, transform: "none", offset: .2, easing: EASE },
       { opacity: 1, offset: .7 }, { opacity: 0, transform: "translateY(-12px)" }], { duration: 950, fill: "forwards" });
+  } else {
+    // banner: sweeps in on the broadcast slant, holds, sweeps out past the edge of any screen width
+    anim = el.animate([{ transform: "translateX(-100vw) skewX(-10deg)", easing: EASE }, { transform: "translateX(0) skewX(-10deg)", offset: .28 },
+      { transform: "translateX(0) skewX(-10deg)", opacity: 1, offset: .72, easing: "cubic-bezier(.7, 0, .84, 0)" },
+      { transform: "translateX(100vw) skewX(-10deg)", opacity: 0 }], { duration: 1350, fill: "forwards" });
   }
-  // banner: sweeps in on the broadcast slant, holds, sweeps out
-  el.animate([{ transform: "translateX(-130%) skewX(-10deg)", easing: EASE }, { transform: "translateX(0) skewX(-10deg)", offset: .28 },
-    { transform: "translateX(0) skewX(-10deg)", offset: .72, easing: "cubic-bezier(.7, 0, .84, 0)" },
-    { transform: "translateX(130%) skewX(-10deg)" }], { duration: 1350, fill: "forwards" });
+  // remove the sting once it has played; a cancel (next ball) rejects the promise, which is fine
+  anim.finished.then(() => { if (layer.firstChild === el) layer.replaceChildren(); }, () => {});
+  if (reduceMotion || !big) return;
   if (mark === "6") burst(layer);
   if (mark === "4") rope(layer);
   if (mark === "W") el.querySelectorAll(".bail").forEach((b, i) =>
