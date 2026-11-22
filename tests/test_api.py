@@ -52,6 +52,12 @@ def test_predict_invalid_returns_422(change):
     assert r.status_code == 422
 
 
+def test_browser_supplied_dew_is_used(monkeypatch):
+    monkeypatch.setattr(main, "evening_dew", lambda city: None)   # server fetch must not be needed
+    body = client.post("/predict", json={**VALID, "dew_point_c": 9.0}).json()
+    assert body["dew_point_c"] == 9.0 and body["dew_source"].startswith("live")
+
+
 def test_weather_down_uses_training_median(monkeypatch):
     monkeypatch.setattr(main, "evening_dew", lambda city: None)
     body = client.post("/predict", json=VALID).json()

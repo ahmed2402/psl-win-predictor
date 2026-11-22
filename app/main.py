@@ -62,6 +62,8 @@ class MatchState(BaseModel):
     balls: int = Field(ge=0, le=5, description="legal balls in the current over")
     runs_last12: int = Field(ge=0, le=100)
     wkts_last12: int = Field(ge=0, le=9)
+    # Fetched by the visitor's browser from Open-Meteo: Render's shared outbound IPs get rate-limited (HTTP 429).
+    dew_point_c: float | None = Field(default=None, ge=-40, le=40)
 
     @model_validator(mode="after")
     def check_consistent(self):
@@ -127,14 +129,18 @@ def health() -> dict[str, str]:
 
 @app.get("/meta")
 def meta() -> dict:
-    return {"teams": META["teams"], "cities": list(COORDS), "model": META["model"],
+    return {"teams": META["teams"], "cities": list(COORDS), "coords": COORDS, "model": META["model"],
             "features": NUMERIC, "test_metrics": META["test_metrics"][META["model"]]}
 
 
 @app.post("/predict")
 def predict(state: MatchState) -> Prediction:
-    live = evening_dew(state.city)
-    dew = live if live is not None else DEW_MEDIAN
+    if state.dew_point_c is not None:
+        dew, source = state.dew_point_c, "live (Open-Meteo, today 16:00-22:00)"
+    elif (live := evening_dew(state.city)) is not None:
+        dew, source = live, "live (Open-Meteo, today 16:00-22:00)"
+    else:
+        dew, source = DEW_MEDIAN, "live weather unavailable: training median used"
     grid = list(range(max(0, state.runs - 30), min(state.target - 1, state.runs + 30) + 1, 2))
     if state.runs not in grid:
         grid = sorted(grid + [state.runs])
@@ -145,8 +151,7 @@ def predict(state: MatchState) -> Prediction:
         batting_team=state.batting_team,
         win_probability=round(float(probs[grid.index(state.runs)]), 4),
         dew_point_c=dew,
-        dew_source="live (Open-Meteo, today 16:00-22:00)" if live is not None
-        else "live weather unavailable: training median used",
+        dew_source=source,
         what_if=[CurvePoint(runs=r, win_probability=round(float(p), 4)) for r, p in zip(grid, probs)],
         contributions=contributions(current),
     )

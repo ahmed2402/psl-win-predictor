@@ -13,6 +13,48 @@ const FIELD_NAMES = { target: "Target", runs: "Runs", wickets: "Wickets", overs:
   balls: "Balls in the over", runs_last12: "Runs in the last 12 balls", wkts_last12: "Wickets in the last 12 balls" };
 const NUM_FIELDS = Object.keys(FIELD_NAMES);
 
+// Original crest badges in each franchise's well-known colours (not official logos): [monogram, field, band, ink].
+// Hyderabad Kingsmen and Rawalpindiz joined in 2026; their colours here are placeholders until confirmed.
+const BADGES = {
+  "Islamabad United": ["IU", "#d71920", "#151515", "#ffffff"],
+  "Karachi Kings": ["KK", "#0b4ea2", "#e8b731", "#ffffff"],
+  "Lahore Qalandars": ["LQ", "#00843d", "#e4222b", "#ffffff"],
+  "Multan Sultans": ["MS", "#0a7c6e", "#f2b705", "#ffffff"],
+  "Peshawar Zalmi": ["PZ", "#fcbf16", "#151515", "#151515"],
+  "Quetta Gladiators": ["QG", "#5a2d82", "#f2b705", "#ffffff"],
+  "Hyderabad Kingsmen": ["HK", "#e36c1d", "#151515", "#ffffff"],
+  "Rawalpindiz": ["RP", "#7d1d3f", "#c9a227", "#ffffff"],
+};
+
+function badgeSVG(team) {
+  const [mono, field, band, ink] = BADGES[team] || [team.slice(0, 2).toUpperCase(), "#3a4a40", "#a9bdb0", "#ffffff"];
+  return `<svg viewBox="0 0 40 46" role="img" aria-label="${team} badge">
+    <clipPath id="c-${mono}"><path d="M20 1 38 6v16c0 12-8 19-18 23C10 41 2 34 2 22V6Z"/></clipPath>
+    <g clip-path="url(#c-${mono})"><rect width="40" height="46" fill="${field}"/><path d="M0 30 40 18v7L0 37Z" fill="${band}"/></g>
+    <path d="M20 1 38 6v16c0 12-8 19-18 23C10 41 2 34 2 22V6Z" fill="none" stroke="#eef3ea" stroke-opacity=".55" stroke-width="1.5"/>
+    <text x="20" y="25" text-anchor="middle" font-family="Big Shoulders Display, sans-serif" font-weight="900" font-size="17" fill="${ink}">${mono}</text>
+  </svg>`;
+}
+
+// Dew point is fetched by the visitor's browser (Render's shared IPs get rate-limited by Open-Meteo).
+let coords = {};
+const dewCache = {};
+async function browserDew(city) {
+  const day = new Date().toISOString().slice(0, 10);
+  if (dewCache[city + day] !== undefined) return dewCache[city + day];
+  const [lat, lon] = coords[city] || [];
+  if (lat === undefined) return null;
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=dew_point_2m&timezone=auto&start_date=${day}&end_date=${day}`;
+    const h = (await (await fetch(url, { signal: AbortSignal.timeout(5000) })).json()).hourly;
+    const vals = h.time.map((t, i) => [Number(t.slice(11, 13)), h.dew_point_2m[i]]).filter(([hr, v]) => hr >= 16 && hr <= 22 && v !== null);
+    if (!vals.length) return null;   // same 16:00-22:00 window as the training data
+    return (dewCache[city + day] = +(vals.reduce((a, [, v]) => a + v, 0) / vals.length).toFixed(1));
+  } catch {
+    return null;   // the server then tries itself, then falls back to the training median
+  }
+}
+
 let worm = null;
 let shownPct = 50;
 let log = [];          // deliveries logged with the pad: {runs, wkt, legal, mark}
@@ -58,7 +100,9 @@ async function predict() {
   $("update").setAttribute("aria-busy", "true");
   $("notice").hidden = true;
   try {
-    const r = await fetch("predict", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(s) });
+    const dew = await browserDew(s.city);
+    const payload = dew === null ? s : { ...s, dew_point_c: dew };
+    const r = await fetch("predict", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
     const body = await r.json();
     if (r.status === 422) {
       showErrors(body.detail.map((d) => d.msg.replace(/^Value error, /, "")));
@@ -80,6 +124,8 @@ function setBar(pct, chaseName, bowlName) {
   $("tug").dataset.state = "ready";
   $("chase-name").textContent = chaseName;
   $("bowl-name").textContent = bowlName;
+  $("chase-badge").innerHTML = badgeSVG(chaseName);
+  $("bowl-badge").innerHTML = badgeSVG(bowlName);
   $("tug-fill").style.setProperty("--p", `${pct}%`);
   countTo(pct);
 }
@@ -112,7 +158,7 @@ function render(s, res) {
   drawWorm(res.what_if, s.runs);
   drawNeedle(res.contributions);
   $("dew").innerHTML = "";
-  $("dew").append("Dew point used: ", bold(`${res.dew_point_c.toFixed(1)}°C`), ` · ${res.dew_source}`);
+  $("dew").append("Dew ", bold(`${res.dew_point_c.toFixed(1)}°C`), res.dew_source.startsWith("live") ? " · live, Open-Meteo" : " · weather offline, typical value used");
 }
 
 function bold(text) { return Object.assign(document.createElement("b"), { textContent: text }); }
@@ -234,6 +280,7 @@ async function boot() {
     fill($("batting_team"), meta.teams, "Lahore Qalandars");
     fill($("bowling_team"), meta.teams, "Karachi Kings");
     fill($("city"), meta.cities, "Lahore");
+    coords = meta.coords;
     const m = meta.test_metrics;
     $("metrics").textContent = `On the unseen 2026 season: ROC-AUC ${m.roc_auc.toFixed(3)}, accuracy ${(m.accuracy * 100).toFixed(0)}%, F1 ${m.f1.toFixed(2)}.`;
     predict();   // the sample state shows the graphic working on first load

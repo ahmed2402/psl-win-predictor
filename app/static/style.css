@@ -48,9 +48,13 @@ a { color: var(--gold); text-underline-offset: .2em; }
   padding: .35rem 1.4rem .35rem 1rem;
   clip-path: polygon(0 0, 100% 0, calc(100% - var(--slant)) 100%, 0 100%);
 }
+.masthead__plate { align-items: center; }
+.masthead__mark {
+  font: 900 1.6rem/1 var(--display); letter-spacing: .02em;
+  background: var(--gold); color: var(--gold-ink); margin: -.35rem 0 -.35rem -1rem; padding: .35rem .9rem .35rem 1rem;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+}
 .masthead__title { font: 900 1.6rem/1 var(--display); text-transform: uppercase; letter-spacing: .01em; }
-.masthead__league { font: 600 .78rem/1 var(--ui); text-transform: uppercase; letter-spacing: .08em; }
-.masthead__how { font-weight: 600; font-size: .9rem; white-space: nowrap; }
 
 /* ---------- layout ---------- */
 .stage {
@@ -73,7 +77,9 @@ a { color: var(--gold); text-underline-offset: .2em; }
       "predictor predictor"
       "pad rail"
       "worm rail"
-      "how rail";
+      "how rail"
+      ". rail";
+    grid-template-rows: auto auto auto auto 1fr;   /* the last flexible row absorbs the rail's extra height */
     align-items: start; align-content: start;
   }
   .rail { grid-area: rail; display: flex; flex-direction: column; gap: 1.25rem; }
@@ -86,7 +92,11 @@ h2 { font: 800 1.45rem/1.1 var(--display); text-transform: uppercase; letter-spa
   display: grid; grid-template-columns: 1fr 1fr; align-items: end;
   row-gap: .6rem;
 }
-.tug__side { display: flex; flex-direction: column; gap: .1rem; min-width: 0; }
+.tug__side { display: flex; flex-direction: column; gap: .35rem; min-width: 0; }
+.tug__id { display: flex; align-items: center; gap: .55rem; min-width: 0; }
+.tug__side--bowl .tug__id { flex-direction: row-reverse; }
+.badge { flex: none; width: clamp(34px, 6vw, 54px); line-height: 0; }
+.badge svg { width: 100%; height: auto; display: block; }
 .tug__side--bowl { align-items: flex-end; text-align: right; }
 .tug__team {
   font: 700 clamp(.85rem, 2.4vw, 1.15rem)/1.15 var(--ui); font-variation-settings: "wdth" 80;
@@ -142,8 +152,11 @@ h2 { font: 800 1.45rem/1.1 var(--display); text-transform: uppercase; letter-spa
   border: 1px solid var(--seam);
   padding: 1.1rem 1.1rem 1.25rem;
 }
-.pad__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .25rem 1rem; }
-.pad__hint, .panel__lede { margin: 0 0 .9rem; color: var(--chalk-dim); font-size: .92rem; max-width: 60ch; }
+.pad h2, .panel--worm h2 { margin-bottom: .8rem; }
+.legend { display: flex; gap: 1rem; margin: 0 0 .9rem; font-size: .8rem; color: var(--chalk-dim); }
+.legend span::before { content: ""; display: inline-block; width: .7em; height: .7em; margin-right: .4em; vertical-align: -.05em; }
+.legend__up::before { background: var(--gold); }
+.legend__down::before { background: var(--red); }
 .pad__keys { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .5rem; }
 @media (min-width: 560px) { .pad__keys { grid-template-columns: repeat(9, minmax(0, 1fr)); } }
 .key {
@@ -227,6 +240,11 @@ input[aria-invalid="true"] { border-color: var(--red); }
 .dew b { color: var(--chalk); }
 
 /* ---------- how it works ---------- */
+.how summary { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; }
+.how summary::-webkit-details-marker { display: none; }
+.how summary::after { content: "+"; font: 900 1.6rem/1 var(--display); color: var(--gold); }
+.how[open] summary::after { content: "\2212"; }
+.how summary h2 { margin: 0; }
 .how p { max-width: 68ch; color: var(--chalk-dim); margin: .5rem 0 0; }
 .how__metrics { color: var(--chalk) !important; font-weight: 600; }
 .how__caveat { font-size: .9rem; }
