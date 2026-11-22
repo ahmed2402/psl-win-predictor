@@ -1,1 +1,149 @@
-<!doctype html><title>PSL Chase Win Predictor</title><p>Front end coming in Batch 6.</p>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chase Predictor · PSL</title>
+  <meta name="description" content="Live win probability for the chasing side in a PSL T20 match, with the reasons behind it.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Big+Shoulders+Display:wght@600;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+<!--
+THESIS: The chase as a live TV win-predictor graphic: one tug-of-war bar between chasing and bowling side that moves with every ball you log. Refuses the dashboard of cards and a gauge.
+OWN-WORLD: Floodlit-night outfield black-green ground, chasing side in floodlight gold, bowling side in ball-leather red; slanted broadcast plates, tall condensed grid-built numerals, hairline seams, no glass, no shadows-as-decoration.
+STORY: A fan sees who is ahead and by how much, reads why (needle movers), and logs each ball to watch the bar move.
+FIRST VIEWPORT: Full-width predictor bar with giant percentages at both ends, the equation plate beneath it ("need 90 off 60"), then the ball-by-ball pad; console form and charts follow.
+FORM: Broadcast win-predictor (brief-pinned; list #1), raised by scorebook ball strip and grid numerals. Seed bf6ac10c.
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+-->
+<header class="masthead">
+  <div class="masthead__plate">
+    <span class="masthead__title">Chase Predictor</span>
+    <span class="masthead__league">PSL T20 · second innings</span>
+  </div>
+  <a class="masthead__how" href="#how">How it works</a>
+</header>
+
+<main class="stage">
+  <section class="predictor" aria-labelledby="predictor-title" aria-live="polite">
+    <h1 id="predictor-title" class="sr-only">Win probability</h1>
+    <div class="tug" id="tug" data-state="loading">
+      <div class="tug__side tug__side--chase">
+        <span class="tug__team" id="chase-name">Chasing side</span>
+        <span class="tug__pct" id="chase-pct">--</span>
+      </div>
+      <div class="tug__side tug__side--bowl">
+        <span class="tug__pct" id="bowl-pct">--</span>
+        <span class="tug__team" id="bowl-name">Bowling side</span>
+      </div>
+      <div class="tug__bar" aria-hidden="true">
+        <div class="tug__fill" id="tug-fill"></div>
+      </div>
+    </div>
+    <p class="equation" id="equation">Enter the chase below.</p>
+    <p class="sr-only" id="summary"></p>
+    <p class="notice" id="notice" role="alert" hidden></p>
+  </section>
+
+  <section class="pad" aria-labelledby="pad-title">
+    <div class="pad__head">
+      <h2 id="pad-title">Ball by ball</h2>
+      <p class="pad__hint">Tap what just happened. Score, overs and the last-12-ball form update and the predictor refreshes.</p>
+    </div>
+    <div class="pad__keys" role="group" aria-label="Log a delivery">
+      <button type="button" class="key" data-ball="0" aria-label="Dot ball">0</button>
+      <button type="button" class="key" data-ball="1">1</button>
+      <button type="button" class="key" data-ball="2">2</button>
+      <button type="button" class="key" data-ball="3">3</button>
+      <button type="button" class="key key--four" data-ball="4">4</button>
+      <button type="button" class="key key--six" data-ball="6">6</button>
+      <button type="button" class="key key--wkt" data-ball="W" aria-label="Wicket">W</button>
+      <button type="button" class="key key--extra" data-ball="Wd" aria-label="Wide or no-ball, one run">Wd</button>
+      <button type="button" class="key key--undo" id="undo" disabled>Undo</button>
+    </div>
+    <ol class="strip" id="strip" aria-label="Last 12 deliveries logged"></ol>
+    <p class="strip__cap" aria-hidden="true">Last 12 deliveries, oldest first</p>
+  </section>
+
+  <div class="rail">
+  <form class="console" id="console" novalidate aria-labelledby="console-title">
+    <h2 id="console-title">Match state</h2>
+    <div class="console__grid">
+      <label class="field field--team">
+        <span>Chasing</span>
+        <select name="batting_team" id="batting_team" required></select>
+      </label>
+      <label class="field field--team">
+        <span>Bowling</span>
+        <select name="bowling_team" id="bowling_team" required></select>
+      </label>
+      <label class="field">
+        <span>City <small>for live dew</small></span>
+        <select name="city" id="city" required></select>
+      </label>
+      <label class="field">
+        <span>Target</span>
+        <input name="target" type="number" inputmode="numeric" min="1" max="400" value="180" required>
+      </label>
+      <fieldset class="field field--score">
+        <legend>Score</legend>
+        <div class="score">
+          <input name="runs" type="number" inputmode="numeric" min="0" max="400" value="90" aria-label="Runs" required>
+          <span aria-hidden="true">/</span>
+          <input name="wickets" type="number" inputmode="numeric" min="0" max="9" value="3" aria-label="Wickets lost" required>
+        </div>
+      </fieldset>
+      <fieldset class="field field--score">
+        <legend>Overs</legend>
+        <div class="score">
+          <input name="overs" type="number" inputmode="numeric" min="0" max="19" value="10" aria-label="Completed overs" required>
+          <span aria-hidden="true">.</span>
+          <input name="balls" type="number" inputmode="numeric" min="0" max="5" value="0" aria-label="Balls in current over" required>
+        </div>
+      </fieldset>
+      <label class="field">
+        <span>Runs, last 12 balls</span>
+        <input name="runs_last12" type="number" inputmode="numeric" min="0" max="100" value="18" required>
+      </label>
+      <label class="field">
+        <span>Wickets, last 12 balls</span>
+        <input name="wkts_last12" type="number" inputmode="numeric" min="0" max="9" value="1" required>
+      </label>
+    </div>
+    <ul class="errors" id="errors" role="alert"></ul>
+    <button class="update" type="submit" id="update">Update predictor</button>
+  </form>
+
+  <section class="panel panel--needle" aria-labelledby="needle-title">
+    <h2 id="needle-title">What is moving the needle</h2>
+    <p class="panel__lede">How far each input pushes the chase away from an average situation. Gold helps the chasing side, red helps the bowlers.</p>
+    <ol class="needle" id="needle"></ol>
+    <p class="dew" id="dew"></p>
+  </section>
+  </div>
+
+  <section class="panel panel--worm" aria-labelledby="worm-title">
+    <h2 id="worm-title">What if the score were different?</h2>
+    <p class="panel__lede">Same overs and wickets, different runs on the board. The ringed point is now.</p>
+    <div class="worm"><canvas id="worm" role="img" aria-label="Win probability against runs scored"></canvas></div>
+    <p class="sr-only" id="worm-text"></p>
+  </section>
+
+
+  <section class="how" id="how" aria-labelledby="how-title">
+    <h2 id="how-title">How it works</h2>
+    <p>A logistic regression trained on every completed, full-length PSL chase from 2015/16 to 2025 (Cricsheet ball-by-ball data), one row per ball. It reads only the live state: balls left, runs needed, wickets, required and current run rate, runs and wickets in the last 12 balls, plus today's evening dew point for the city from Open-Meteo.</p>
+    <p>Team names are labels only. Venue, toss and target were tested and left out: their effect already shows up in the live state, and venue behaviour changed between eras.</p>
+    <p class="how__metrics" id="metrics"></p>
+    <p class="how__caveat">Recent seasons score higher than the training years, so the predictor can underrate chasers in the middle range. Early in a chase it is honestly uncertain.</p>
+  </section>
+</main>
+
+<footer class="foot">CT-378 Machine Learning project · Ahmed Raza &amp; Fuzail Ahmed Siddiqui · Data: Cricsheet (ODC-By), Open-Meteo (CC BY 4.0) · Not affiliated with the PSL.</footer>
+</body>
+</html>

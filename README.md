@@ -37,6 +37,9 @@ Training takes a few minutes on a laptop.
     uvicorn app.main:app --reload     # http://localhost:8000  (API docs at /docs)
     pytest                            # API tests (offline)
 
+The page (`app/static/`) is a broadcast-style win-predictor graphic. Enter the match state, or log each delivery with the
+ball pad (0 1 2 3 4 6 W Wd, with undo). It shows the probability, a what-if curve and the inputs moving the needle.
+
 Endpoints: `GET /health`, `GET /meta`, `POST /predict`. `/predict` validates the match state and fetches
 today's evening dew point for the chosen city live from Open-Meteo (falls back to the training median
 if the weather service is unreachable).
