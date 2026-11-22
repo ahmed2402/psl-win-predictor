@@ -42,12 +42,9 @@ Training takes a few minutes on a laptop.
 The page (`app/static/`) is a broadcast-style win-predictor graphic. Enter the match state, or log each delivery with the
 ball pad (0 1 2 3 4 6 W Wd, with undo). It shows the probability, a what-if curve and the inputs moving the needle.
 
-Endpoints: `GET /health`, `GET /meta`, `POST /predict`. `/predict` validates the match state and fetches
-today's evening dew point for the chosen city live from Open-Meteo (falls back to the training median
-if the weather service is unreachable).
-
-Dry run: `python tools/make_fake_data.py` writes SYNTHETIC matches into
-data/raw/psl_json (`weather.py` still needs internet). Delete that folder before real work and never report numbers from it.
+Endpoints: `GET /health`, `GET /meta`, `POST /predict`. `/predict` validates the match state. Today's evening
+dew point for the chosen city comes live from Open-Meteo (fetched by the browser, then by the server as a
+backup, then the training median if the weather service is unreachable).
 
 ## Data sources
 
@@ -56,14 +53,23 @@ data/raw/psl_json (`weather.py` still needs internet). Delete that folder before
 | Cricsheet (`psl_male_json.zip`) | PSL ball-by-ball, 357 matches, seasons 2015/16 to 2026 | Open Data Commons Attribution, https://cricsheet.org/licensing/ | 2026-11-22 | HTTP download, `src/download_data.py` |
 | Open-Meteo Historical Weather API | Evening (16:00 to 22:00 local) mean temperature, humidity and dew point per match city and date | CC BY 4.0, https://open-meteo.com/en/licence | 2026-11-22 | Public API, `src/weather.py` |
 
-Result: 339 usable matches, 38,790 second-innings ball states, 25 model features.
+Result: 339 usable matches, 38,790 second-innings ball states, 25 candidate features. The model uses the 8
+that the data supports (live match state + dew point); the reasoning is in `notebooks/01_eda.ipynb`.
 Player names are present in the raw Cricsheet files but never enter the dataset.
 
 Inspiration only, no code copied: arka562/ipl_analysis on GitHub.
 
+## Results
+
+Logistic regression, selected on the validation seasons (2023/24, 2025) from a run-rate baseline, logistic
+regression, KNN, random forest and gradient boosting (5-fold GroupKFold tuning). Scored once on the unseen
+2026 season: **ROC-AUC 0.918** (baseline 0.892), F1 0.839, accuracy 0.808. Details: `notebooks/02_modelling.ipynb`.
+
 ## Layout
     src/        download, weather, dataset build, features, pipeline, training, evaluation
     notebooks/  01_eda.ipynb (EDA and feature decisions), 02_modelling.ipynb (results)
-    app/        FastAPI backend and HTML front end
-    models/   saved pipeline (joblib) and meta.json
-    reports/  figures and metric tables
+    app/        FastAPI backend (main.py) and HTML front end (static/)
+    models/     saved pipeline (joblib) and meta.json
+    reports/    figures and metric tables
+    tests/      API tests (pytest)
+    data/       external/weather.csv; raw/ and processed/ are rebuilt by the scripts

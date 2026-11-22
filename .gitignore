@@ -1,9 +1,25 @@
+# Python
 __pycache__/
 *.pyc
 .venv/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Data: raw/processed are rebuilt by src/download_data.py + src/build_dataset.py
 data/raw/*
 data/processed/*
 !data/**/.gitkeep
-.ipynb_checkpoints/
-.pytest_cache/
-.impeccable/review/
+
+# AI assistant / tooling (local only, not part of the submission)
+CLAUDE.md
+handoff.md
+PLAN.md
+PRODUCT.md
+DESIGN.md
+.impeccable/
+.claude/
+.agents/
+.codex/
+
+# Course material (instructor's document)
+CT-378 ML Project Guidelines.pdf
