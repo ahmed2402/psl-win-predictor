@@ -126,7 +126,8 @@ function setBar(pct, chaseName, bowlName) {
   $("bowl-name").textContent = bowlName;
   $("chase-badge").innerHTML = badgeSVG(chaseName);
   $("bowl-badge").innerHTML = badgeSVG(bowlName);
-  $("tug-fill").style.setProperty("--p", pct >= 100 ? "calc(100% + 22px)" : `${pct}%`);   // at 100% push the slant past the edge
+  $("tug-fill").style.setProperty("--p", `${pct}%`);
+  $("tug-fill").classList.toggle("is-full", pct >= 100);   // at 100% drop the slant so no red shows at either end
   countTo(pct);
 }
 
@@ -216,7 +217,9 @@ const BALLS = { 0: [0, 0, 1], 1: [1, 0, 1], 2: [2, 0, 1], 3: [3, 0, 1], 4: [4, 0
 
 function logBall(mark) {
   const s = readState();
-  if (problems(s).length) return showErrors(problems(s));
+  const errs = problems(s);
+  showErrors(errs);   // also clears any earlier error once the state is valid
+  if (errs.length) return;
   if (!log.length) base12 = { r: s.runs_last12, w: s.wkts_last12 };
   undoStack.push({ ...s });
   const [runs, wkt, legal] = BALLS[mark];

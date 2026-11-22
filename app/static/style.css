@@ -131,6 +131,7 @@ h2 { font: 800 1.45rem/1.1 var(--display); text-transform: uppercase; letter-spa
   transition: transform .9s var(--ease);
 }
 .tug[data-state="loading"] .tug__fill { opacity: .35; }
+.tug__fill.is-full { clip-path: none; }
 .tug[data-state="loading"] .tug__pct { opacity: .35; }
 .equation {   /* broadcast stat strip: four tiles divided by seams */
   margin: 1rem 0 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
