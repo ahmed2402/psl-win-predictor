@@ -1,6 +1,7 @@
 """FastAPI backend: serves the HTML front end and predicts the chasing team's win probability."""
 import datetime
 import json
+import logging
 import pathlib
 import sys
 import urllib.request
@@ -21,6 +22,7 @@ DEW_MEDIAN = round(float(PIPE.named_steps["prep"].named_transformers_["num"]
                          .named_steps["imp"].statistics_[NUMERIC.index("dew_point_c")]), 1)
 FORECAST_API = "https://api.open-meteo.com/v1/forecast"
 _dew_cache: dict[tuple[str, str], float] = {}
+log = logging.getLogger("uvicorn.error")
 
 app = FastAPI(title="PSL Chase Win Predictor")
 
@@ -35,10 +37,12 @@ def evening_dew(city: str) -> float | None:
     lat, lon = COORDS[city]
     url = (f"{FORECAST_API}?latitude={lat}&longitude={lon}&hourly=dew_point_2m"
            f"&timezone=auto&start_date={day}&end_date={day}")
+    req = urllib.request.Request(url, headers={"User-Agent": "psl-chase-predictor/1.0"})
     try:
-        with urllib.request.urlopen(url, timeout=5) as r:
+        with urllib.request.urlopen(req, timeout=8) as r:
             hourly = json.load(r)["hourly"]
-    except (OSError, ValueError, KeyError):
+    except (OSError, ValueError, KeyError) as e:
+        log.warning("Open-Meteo dew fetch failed for %s: %r", city, e)
         return None
     vals = [v for t, v in zip(hourly["time"], hourly["dew_point_2m"]) if 16 <= int(t[11:13]) <= 22 and v is not None]
     if not vals:
