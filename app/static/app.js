@@ -156,6 +156,7 @@ function render(s, res) {
   const need = s.target - s.runs;
   const rrr = (need * 6 / balls).toFixed(2);
   showResult(null);
+  updateScore(s);
   $("st-need").textContent = need;
   $("st-balls").textContent = balls;
   $("st-wkts").textContent = 10 - s.wickets;
@@ -248,9 +249,16 @@ function finished(s) {   // the chase can end on this ball: no prediction needed
   else if (legalBalls >= 120) [text, pct] = s.runs === s.target - 1 ? ["Scores level: it's a tie.", 50] : [`Overs are up. ${s.bowling_team} win.`, 0];
   if (text === null) return false;
   setBar(pct, s.batting_team, s.bowling_team);
+  updateScore(s);
   showResult(text);
   document.querySelectorAll(".key[data-ball]").forEach((k) => { k.disabled = true; });
   return true;
+}
+
+function updateScore(s) {   // live scoreboard plate in the masthead
+  $("sb-runs").textContent = s.runs;
+  $("sb-wkts").textContent = s.wickets;
+  $("sb-overs").textContent = `${s.overs}.${s.balls}`;
 }
 
 function showResult(text) {   // the chase is over: a result plate replaces the stat strip
@@ -408,7 +416,9 @@ async function boot() {
     fill($("city"), meta.cities, "Lahore");
     coords = meta.coords;
     const m = meta.test_metrics;
-    $("metrics").textContent = `On the unseen 2026 season: ROC-AUC ${m.roc_auc.toFixed(3)}, accuracy ${(m.accuracy * 100).toFixed(0)}%, F1 ${m.f1.toFixed(2)}.`;
+    $("m-auc").textContent = m.roc_auc.toFixed(3);
+    $("m-acc").textContent = `${(m.accuracy * 100).toFixed(0)}%`;
+    $("m-f1").textContent = m.f1.toFixed(2);
     predict();   // the sample state shows the graphic working on first load
   } catch (e) {
     note(`The predictor service isn't answering (${e.message}). Reload in a moment.`);

@@ -18,6 +18,10 @@
     <span class="masthead__mark">PSL</span>
     <span class="masthead__title">Chase Predictor</span>
   </div>
+  <div class="scorebug" aria-live="polite" aria-label="Live score">
+    <span class="scorebug__score"><span id="sb-runs">--</span><span class="scorebug__slash">/</span><span id="sb-wkts">-</span></span>
+    <span class="scorebug__overs"><span id="sb-overs">-.-</span> overs</span>
+  </div>
   <button type="button" class="sound" id="sound" aria-pressed="false" aria-label="Sound effects">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path class="sound__waves" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path class="sound__mute" d="M16 9l6 6M22 9l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
     <span>Sound</span>
@@ -136,11 +140,33 @@
 
   <details class="how" id="how">
     <summary><h2>How it works</h2></summary>
-    <p>Logistic regression on every full-length PSL chase, 2015/16 to 2025, ball by ball (Cricsheet). Inputs: the live match state plus tonight's dew point for the city (Open-Meteo).</p>
-    <p>Teams, venue and toss are not inputs: their effect already shows in the live state.</p>
-    <p class="how__metrics" id="metrics"></p>
-    <p class="how__caveat">Recent high-scoring seasons can make it underrate chasers mid-innings.</p>
-    <p class="how__caveat">Unofficial fan project, not affiliated with the PSL or its teams. Team badges are original designs.</p>
+    <div class="how__grid">
+      <section class="how__card">
+        <h3>Model</h3>
+        <p class="how__lead">Logistic regression</p>
+        <p>Trained ball by ball on every full-length PSL chase, 2015/16 to 2025 (Cricsheet).</p>
+      </section>
+      <section class="how__card">
+        <h3>Reads</h3>
+        <ul class="chips">
+          <li>Balls left</li><li>Runs needed</li><li>Wickets</li><li>Required rate</li>
+          <li>Current rate</li><li>Last 12 balls</li><li>Dew point</li>
+        </ul>
+      </section>
+      <section class="how__card">
+        <h3>Leaves out</h3>
+        <ul class="chips chips--off"><li>Teams</li><li>Venue</li><li>Toss</li></ul>
+        <p>Their effect already shows in the live state.</p>
+      </section>
+    </div>
+    <div class="how__scores" aria-label="Scores on the unseen 2026 season">
+      <div><span class="how__num" id="m-auc">--</span><span class="how__lbl">ROC-AUC</span></div>
+      <div><span class="how__num" id="m-acc">--</span><span class="how__lbl">Accuracy</span></div>
+      <div><span class="how__num" id="m-f1">--</span><span class="how__lbl">F1 score</span></div>
+      <p class="how__season">Tested on the 2026 season, which the model never saw.</p>
+    </div>
+    <p class="how__note">Recent high-scoring seasons can make it underrate chasers mid-innings.</p>
+    <p class="how__fine">Unofficial fan project, not affiliated with the PSL or its teams. Team badges are original designs.</p>
   </details>
 </main>
 
