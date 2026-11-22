@@ -42,25 +42,26 @@ def main():
     Xva, yva = xy(parts["val"], cols)
     Xte, yte = xy(parts["test"], cols)
     cv = GroupKFold(n_splits=5)
-    n_iter = 2 if QUICK else 8
+    # grids widened after the first run hit their edges (logreg C=0.01, knn k=61, hgb leaf=100)
+    n_iter = 2 if QUICK else 12
 
     searches = {
         "logreg": GridSearchCV(
             make_pipeline(LogisticRegression(max_iter=2000), NUMERIC),
-            {"model__C": [0.01, 0.1, 1, 10]}, cv=cv, scoring="roc_auc", n_jobs=-1),
+            {"model__C": [0.001, 0.003, 0.01, 0.03, 0.1, 1]}, cv=cv, scoring="roc_auc", n_jobs=-1),
         "knn": GridSearchCV(
             make_pipeline(KNeighborsClassifier(), NUMERIC),
-            {"model__n_neighbors": [15, 31, 61], "model__weights": ["uniform", "distance"]},
+            {"model__n_neighbors": [31, 61, 121, 201], "model__weights": ["uniform", "distance"]},
             cv=cv, scoring="roc_auc", n_jobs=-1),
         "random_forest": RandomizedSearchCV(
             make_pipeline(RandomForestClassifier(random_state=SEED, n_jobs=-1), NUMERIC),
-            {"model__n_estimators": [200, 400], "model__max_depth": [6, 10, 14, None],
-             "model__min_samples_leaf": [5, 20, 50]},
+            {"model__n_estimators": [200, 400], "model__max_depth": [4, 6, 10, None],
+             "model__min_samples_leaf": [5, 20, 50, 100]},
             n_iter=n_iter, cv=cv, scoring="roc_auc", random_state=SEED, n_jobs=1),
         "gradient_boosting": RandomizedSearchCV(
             make_pipeline(HistGradientBoostingClassifier(random_state=SEED), NUMERIC),
-            {"model__learning_rate": [0.03, 0.06, 0.1], "model__max_depth": [3, 5, None],
-             "model__max_leaf_nodes": [15, 31], "model__min_samples_leaf": [20, 50, 100],
+            {"model__learning_rate": [0.03, 0.06, 0.1], "model__max_depth": [2, 3, 5],
+             "model__max_leaf_nodes": [15, 31], "model__min_samples_leaf": [50, 100, 200, 400],
              "model__l2_regularization": [0.0, 1.0]},
             n_iter=n_iter, cv=cv, scoring="roc_auc", random_state=SEED, n_jobs=-1),
     }
@@ -71,13 +72,16 @@ def main():
         s.fit(Xtr, ytr, groups=Xtr["match_id"])
         m = score(s.best_estimator_, Xva, yva)
         fitted[name] = s
-        rows.append({"model": name, "cv_auc": s.best_score_, **{f"val_{k}": v for k, v in m.items()},
+        train_auc = score(s.best_estimator_, Xtr, ytr)["roc_auc"]   # vs cv/val: over/under-fitting check
+        rows.append({"model": name, "train_auc": train_auc, "cv_auc": s.best_score_,
+                     **{f"val_{k}": v for k, v in m.items()},
                      "fit_seconds": round(time.time() - t, 1), "best_params": s.best_params_})
-        print(f"{name:18s} cv_auc={s.best_score_:.3f} val_auc={m['roc_auc']:.3f} ({rows[-1]['fit_seconds']}s)")
+        print(f"{name:18s} train_auc={train_auc:.3f} cv_auc={s.best_score_:.3f} val_auc={m['roc_auc']:.3f} "
+              f"({rows[-1]['fit_seconds']}s)")
 
     base = make_baseline(LogisticRegression()).fit(Xtr, ytr)
     bm = score(base, Xva, yva)
-    rows.insert(0, {"model": "baseline_rrr", "cv_auc": np.nan,
+    rows.insert(0, {"model": "baseline_rrr", "train_auc": score(base, Xtr, ytr)["roc_auc"], "cv_auc": np.nan,
                     **{f"val_{k}": v for k, v in bm.items()}, "fit_seconds": 0, "best_params": {}})
     table = pd.DataFrame(rows)
     pathlib.Path("reports").mkdir(exist_ok=True)
@@ -104,7 +108,8 @@ def main():
     pathlib.Path("models/meta.json").write_text(json.dumps(meta, indent=2))
 
     # keep test predictions for evaluate.py (plots only, no further tuning)
-    out = Xte.copy()
+    context = ["batting_team", "bowling_team", "venue", "over", "runs", "target"]   # for readable error tables
+    out = pd.concat([parts["test"][context], Xte], axis=1)
     out["y"] = yte.values
     out["p_final"] = final.predict_proba(Xte)[:, 1]
     out["p_baseline"] = base_final.predict_proba(Xte)[:, 1]

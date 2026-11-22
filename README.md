@@ -28,6 +28,7 @@ macOS / Linux:
     jupyter nbconvert --to notebook --execute --inplace notebooks/01_eda.ipynb   # EDA, 7 figures -> reports/figures
     python src/train.py             # tunes models, saves models/win_pipeline.joblib
     python src/evaluate.py          # test-set plots and error tables
+    jupyter nbconvert --to notebook --execute --inplace notebooks/02_modelling.ipynb   # results narrative
 
 Training takes a few minutes on a laptop.
 
@@ -48,7 +49,7 @@ Inspiration only, no code copied: arka562/ipl_analysis on GitHub.
 
 ## Layout
     src/        download, weather, dataset build, features, pipeline, training, evaluation
-    notebooks/  01_eda.ipynb (EDA and feature decisions)
+    notebooks/  01_eda.ipynb (EDA and feature decisions), 02_modelling.ipynb (results)
     app/        FastAPI backend and HTML front end
     models/   saved pipeline (joblib) and meta.json
     reports/  figures and metric tables

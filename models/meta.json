@@ -1,0 +1,66 @@
+{
+  "model": "logreg",
+  "feature_columns": [
+    "balls_left",
+    "runs_needed",
+    "wickets",
+    "rrr",
+    "crr",
+    "runs_last12",
+    "wkts_last12",
+    "dew_point_c"
+  ],
+  "teams": [
+    "Hyderabad Kingsmen",
+    "Islamabad United",
+    "Karachi Kings",
+    "Lahore Qalandars",
+    "Multan Sultans",
+    "Peshawar Zalmi",
+    "Quetta Gladiators",
+    "Rawalpindiz"
+  ],
+  "venues": [
+    "Dubai International Cricket Stadium",
+    "Gaddafi Stadium, Lahore",
+    "Multan Cricket Stadium",
+    "National Stadium, Karachi",
+    "Rawalpindi Cricket Stadium",
+    "Sharjah Cricket Stadium",
+    "Sheikh Zayed Stadium, Abu Dhabi"
+  ],
+  "test_metrics": {
+    "baseline_rrr": {
+      "roc_auc": 0.891643906361389,
+      "f1": 0.7977920883164673,
+      "log_loss": 0.4269766578501214,
+      "accuracy": 0.7645672664952871
+    },
+    "logreg": {
+      "roc_auc": 0.9183609928709039,
+      "f1": 0.8391507736595898,
+      "log_loss": 0.3906858840795421,
+      "accuracy": 0.8084832904884319
+    }
+  },
+  "split": {
+    "train": [
+      "2015/16",
+      "2016/17",
+      "2017/18",
+      "2018/19",
+      "2019/20",
+      "2020/21",
+      "2021",
+      "2021/22",
+      "2022/23"
+    ],
+    "val": [
+      "2023/24",
+      "2025"
+    ],
+    "test": [
+      "2026"
+    ]
+  }
+}
