@@ -1,7 +1,7 @@
 # PSL Live Win-Probability Predictor
 
 CT-378 Machine Learning project. Predicts the probability that the chasing team wins,
-from the match state at any ball of a PSL second innings. Deployed with Streamlit.
+from the match state at any ball of a PSL second innings. Served by a FastAPI backend with an HTML front end.
 
 ## Setup (Python 3.13, see .python-version; run every command from the project root folder)
 
@@ -28,12 +28,11 @@ macOS / Linux:
     jupyter nbconvert --to notebook --execute --inplace notebooks/01_eda.ipynb   # EDA, 7 figures -> reports/figures
     python src/train.py             # tunes models, saves models/win_pipeline.joblib
     python src/evaluate.py          # test-set plots and error tables
-    streamlit run app/streamlit_app.py
 
-The app opens at http://localhost:8501. Training takes a few minutes on a laptop.
+Training takes a few minutes on a laptop.
 
-Dry run without internet: `python tools/make_fake_data.py` writes SYNTHETIC matches into
-data/raw/psl_json. Delete that folder before real work and never report numbers from it.
+Dry run: `python tools/make_fake_data.py` writes SYNTHETIC matches into
+data/raw/psl_json (`weather.py` still needs internet). Delete that folder before real work and never report numbers from it.
 
 ## Data sources
 
@@ -48,7 +47,8 @@ Player names are present in the raw Cricsheet files but never enter the dataset.
 Inspiration only, no code copied: arka562/ipl_analysis on GitHub.
 
 ## Layout
-    src/      download, dataset build, features, pipeline, training, evaluation, EDA
-    app/      Streamlit app
+    src/        download, weather, dataset build, features, pipeline, training, evaluation
+    notebooks/  01_eda.ipynb (EDA and feature decisions)
+    app/        FastAPI backend and HTML front end
     models/   saved pipeline (joblib) and meta.json
     reports/  figures and metric tables

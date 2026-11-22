@@ -4,17 +4,15 @@ import pandas as pd
 
 PK_CITIES = {"Lahore", "Karachi", "Rawalpindi", "Multan", "Islamabad", "Faisalabad"}
 
-# Raw state columns produced by build_dataset.py / entered in the app
-RAW_STATE = ["legal_balls", "runs", "wickets", "target", "runs_last12", "wkts_last12"]
-
+# Model inputs chosen from the EDA decision table (notebooks/01_eda.ipynb).
+# The dataset keeps all 25 candidate features; dropped ones were redundant, drifting or memorisable.
+# Venue, target and toss were tested and dropped: their effect is already in the live state
+# (target is inside runs_needed/rrr), and venue behaviour drifts between eras (EDA section 11).
 NUMERIC = [
-    "over", "ball_in_over", "runs", "wickets", "balls_left", "wickets_left",
-    "runs_needed", "target", "crr", "rrr", "rr_gap", "runs_last12", "wkts_last12",
-    "is_powerplay", "is_death", "toss_winner_is_chaser", "in_pakistan",
-    "venue_avg_first",  # added inside the Pipeline by VenueAverage
+    "balls_left", "runs_needed", "wickets", "rrr", "crr", "runs_last12", "wkts_last12",
+    "dew_point_c",  # second data source (Open-Meteo); dew helps chasing sides at night
 ]
-WEATHER = ["temp_c", "humidity", "dew_point_c"]  # second source (Open-Meteo)
-CATEGORICAL = ["batting_team", "bowling_team", "venue", "toss_decision"]
+RATE_CAP = 36.0  # six off every ball: above this the chaser never won (EDA section 3)
 
 
 def add_derived(df: pd.DataFrame) -> pd.DataFrame:

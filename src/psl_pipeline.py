@@ -1,50 +1,32 @@
-"""Pipeline pieces: leak-free venue feature, preprocessing, chronological season split."""
-import pandas as pd
-from sklearn.base import BaseEstimator, TransformerMixin
+"""Pipeline pieces: run-rate clipping, preprocessing, chronological season split."""
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import FunctionTransformer, OneHotEncoder, StandardScaler
 
-from features import CATEGORICAL, NUMERIC, WEATHER
-
-
-class VenueAverage(BaseEstimator, TransformerMixin):
-    """Average first-innings total per venue, learned from the training matches only.
-
-    fit() needs 'match_id', 'venue' and 'target' columns (target - 1 = first-innings total).
-    transform() only needs 'venue', so the app can call it without match_id.
-    """
-
-    def fit(self, X, y=None):
-        m = X.drop_duplicates("match_id")
-        self.venue_mean_ = (m["target"] - 1).groupby(m["venue"]).mean()
-        self.global_mean_ = float((m["target"] - 1).mean())
-        return self
-
-    def transform(self, X):
-        X = X.copy()
-        X["venue_avg_first"] = X["venue"].map(self.venue_mean_).fillna(self.global_mean_)
-        return X
+from features import NUMERIC, RATE_CAP
 
 
-def feature_lists(df):
-    numeric = NUMERIC + WEATHER
-    return numeric, CATEGORICAL
+def clip_rates(X):
+    """Cap run rates at RATE_CAP. Inside the pipeline, so the API gets the same treatment."""
+    return X.assign(rrr=X["rrr"].clip(upper=RATE_CAP), crr=X["crr"].clip(upper=RATE_CAP))
 
 
-def make_pipeline(clf, numeric, categorical):
-    prep = ColumnTransformer([
-        ("num", Pipeline([("imp", SimpleImputer(strategy="median")), ("sc", StandardScaler())]), numeric),
-        ("cat", Pipeline([("imp", SimpleImputer(strategy="most_frequent")),
-                          ("oh", OneHotEncoder(handle_unknown="ignore", sparse_output=False))]), categorical),
-    ])
-    return Pipeline([("venue", VenueAverage()), ("prep", prep), ("model", clf)])
+def make_pipeline(clf, numeric=NUMERIC, categorical=()):
+    """clip -> impute + scale numeric (+ one-hot categorical, used only for EDA comparisons) -> model.
+    Every step is fitted on the training data passed to fit(), so nothing leaks from validation/test."""
+    steps = [("num", Pipeline([("imp", SimpleImputer(strategy="median")), ("sc", StandardScaler())]), list(numeric))]
+    if categorical:
+        steps.append(("cat", Pipeline([("imp", SimpleImputer(strategy="most_frequent")),
+                                       ("oh", OneHotEncoder(handle_unknown="ignore", sparse_output=False))]),
+                      list(categorical)))
+    return Pipeline([("clip", FunctionTransformer(clip_rates)), ("prep", ColumnTransformer(steps)), ("model", clf)])
 
 
 def make_baseline(clf):
     """Baseline: required run rate alone."""
-    return Pipeline([("sel", ColumnTransformer([("rrr", StandardScaler(), ["rrr"])])), ("model", clf)])
+    return Pipeline([("clip", FunctionTransformer(clip_rates)),
+                     ("sel", ColumnTransformer([("rrr", StandardScaler(), ["rrr"])])), ("model", clf)])
 
 
 def split_by_season(df, cuts=(0.70, 0.85)):

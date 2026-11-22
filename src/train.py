@@ -13,8 +13,8 @@ from sklearn.metrics import f1_score, log_loss, roc_auc_score
 from sklearn.model_selection import GridSearchCV, GroupKFold, RandomizedSearchCV
 from sklearn.neighbors import KNeighborsClassifier
 
-from features import WEATHER
-from psl_pipeline import feature_lists, make_baseline, make_pipeline, split_by_season
+from features import NUMERIC
+from psl_pipeline import make_baseline, make_pipeline, split_by_season
 
 DATA = pathlib.Path("data/processed/ball_states.csv")
 SEED = 42
@@ -33,9 +33,7 @@ def score(model, X, y):
 
 def main():
     df = pd.read_csv(DATA, parse_dates=["date"])
-    numeric, categorical = feature_lists(df)
-    cols = [c for c in numeric + categorical if c != "venue_avg_first"]
-    cols += ["target"] if "target" not in cols else []
+    cols = NUMERIC
     parts, groups = split_by_season(df)
     for k, v in parts.items():
         print(f"{k:5s} seasons={groups[k]} matches={v.match_id.nunique()} rows={len(v)}")
@@ -48,19 +46,19 @@ def main():
 
     searches = {
         "logreg": GridSearchCV(
-            make_pipeline(LogisticRegression(max_iter=2000), numeric, categorical),
+            make_pipeline(LogisticRegression(max_iter=2000), NUMERIC),
             {"model__C": [0.01, 0.1, 1, 10]}, cv=cv, scoring="roc_auc", n_jobs=-1),
         "knn": GridSearchCV(
-            make_pipeline(KNeighborsClassifier(), numeric, categorical),
+            make_pipeline(KNeighborsClassifier(), NUMERIC),
             {"model__n_neighbors": [15, 31, 61], "model__weights": ["uniform", "distance"]},
             cv=cv, scoring="roc_auc", n_jobs=-1),
         "random_forest": RandomizedSearchCV(
-            make_pipeline(RandomForestClassifier(random_state=SEED, n_jobs=-1), numeric, categorical),
+            make_pipeline(RandomForestClassifier(random_state=SEED, n_jobs=-1), NUMERIC),
             {"model__n_estimators": [200, 400], "model__max_depth": [6, 10, 14, None],
              "model__min_samples_leaf": [5, 20, 50]},
             n_iter=n_iter, cv=cv, scoring="roc_auc", random_state=SEED, n_jobs=1),
         "gradient_boosting": RandomizedSearchCV(
-            make_pipeline(HistGradientBoostingClassifier(random_state=SEED), numeric, categorical),
+            make_pipeline(HistGradientBoostingClassifier(random_state=SEED), NUMERIC),
             {"model__learning_rate": [0.03, 0.06, 0.1], "model__max_depth": [3, 5, None],
              "model__max_leaf_nodes": [15, 31], "model__min_samples_leaf": [20, 50, 100],
              "model__l2_regularization": [0.0, 1.0]},
@@ -98,11 +96,9 @@ def main():
 
     pathlib.Path("models").mkdir(exist_ok=True)
     joblib.dump(final, "models/win_pipeline.joblib")
-    venue_city = df.drop_duplicates("venue").set_index("venue")["city"].to_dict()
     meta = {
         "model": best_name, "feature_columns": [c for c in cols if c != "match_id"],
         "teams": sorted(df["batting_team"].unique()), "venues": sorted(df["venue"].unique()),
-        "venue_city": venue_city, "weather_features": WEATHER,
         "test_metrics": test, "split": {k: v for k, v in groups.items()},
     }
     pathlib.Path("models/meta.json").write_text(json.dumps(meta, indent=2))
