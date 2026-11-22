@@ -122,7 +122,7 @@ def contributions(row: pd.DataFrame) -> list[Contribution]:
             for f, v, c, x in zip(NUMERIC, row.iloc[0], model.coef_[0], scaled)]
 
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])   # uptime monitors (UptimeRobot) send HEAD
 def health() -> dict[str, str]:
     return {"status": "ok"}
 

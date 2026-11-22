@@ -16,6 +16,7 @@ def offline_dew(monkeypatch):
 
 def test_health():
     assert client.get("/health").json() == {"status": "ok"}
+    assert client.head("/health").status_code == 200   # UptimeRobot monitors use HEAD
 
 
 def test_meta_lists_teams_and_cities():
