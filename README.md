@@ -3,6 +3,8 @@
 CT-378 Machine Learning project. Predicts the probability that the chasing team wins,
 from the match state at any ball of a PSL second innings. Served by a FastAPI backend with an HTML front end.
 
+**Live app:** https://psl-chase-predictor.onrender.com (Render, free tier) · **API docs:** https://psl-chase-predictor.onrender.com/docs
+
 ## Setup (Python 3.13, see .python-version; run every command from the project root folder)
 
 `requirements.txt` holds the runtime packages only (what the deployed API needs).
